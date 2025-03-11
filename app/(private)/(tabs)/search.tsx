@@ -116,13 +116,13 @@ const SearchScreen = () => {
             // Animate search bar width
             Animated.timing(searchBarWidth, {
                 toValue: width - 65,  // Less width when focused to leave space for back button
-                duration: 250,
+                duration: 200,
                 useNativeDriver: false
             }),
             // Animate search bar moving up to the header position
             Animated.timing(searchBarTranslateY, {
                 toValue: 0,  // Small offset to move up
-                duration: 250,
+                duration: 200,
                 useNativeDriver: true
             }),
             // Animate header height and opacity to collapse it
@@ -332,20 +332,20 @@ const styles = StyleSheet.create({
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#EFEFEF',
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        height: 40,
+        backgroundColor: '#fafafa', // Updated to match custom SearchBar
+        borderRadius: 17, // Updated to match custom SearchBar
+        paddingVertical: 12, // Updated to match custom SearchBar
+        paddingHorizontal: 20, // Updated to match custom SearchBar
         justifyContent: 'space-between',
-        // Use flex to expand and fill available space
     },
     searchIcon: {
-        marginRight: 8,
+        marginRight: 12, // Updated to match custom SearchBar
     },
     searchInput: {
         flex: 1,
         height: '100%',
         fontSize: 16,
+        color: 'black', // Updated to match custom SearchBar
     },
     resultsContainer: {
         flex: 1,
