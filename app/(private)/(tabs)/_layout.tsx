@@ -127,6 +127,7 @@ const Layout = () => {
                             tabBarIcon: ({ size, color, focused }) => (
                                 <Ionicons name={focused ? 'search' : 'search-outline'} size={size} color={color} />
                             ),
+                            headerShown: false
                         }}
                     />
                     <Tabs.Screen
