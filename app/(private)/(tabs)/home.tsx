@@ -20,7 +20,7 @@ const padding = 20;
 const underlineWidth = screenWidth / 2 - padding;
 
 const HEADER_HEIGHT = 60; // Estimated header height
-const TAB_HEIGHT = 48;   // Estimated tab height
+const TAB_HEIGHT = 40;   // Estimated tab height
 
 const Home = () => {
     const insets = useSafeAreaInsets();
@@ -29,6 +29,10 @@ const Home = () => {
     const scrollY = useRef(new Animated.Value(0)).current;
     const scrollViewRef = useRef<ScrollView>(null);
     const [refreshing, setRefreshing] = useState(false);
+
+    const setTouchActive = useCallback((isActive: boolean) => {
+        headerRef.current?.setTouchActive(isActive);
+    }, []);
 
     // Header fade and translate animation
     const headerOpacity = scrollY.interpolate({
@@ -187,6 +191,8 @@ const Home = () => {
                             style={styles.page}
                             scrollEventThrottle={16}
                             onScroll={handleVerticalScroll}
+                            onScrollBeginDrag={() => setTouchActive(true)}
+                            onScrollEndDrag={() => setTouchActive(false)}
                             showsVerticalScrollIndicator={false}
                             refreshControl={
                                 <RefreshControl
@@ -211,6 +217,8 @@ const Home = () => {
                             style={styles.page}
                             scrollEventThrottle={16}
                             onScroll={handleVerticalScroll}
+                            onScrollBeginDrag={() => setTouchActive(true)}
+                            onScrollEndDrag={() => setTouchActive(false)}
                             showsVerticalScrollIndicator={false}
                             refreshControl={
                                 <RefreshControl
@@ -261,15 +269,15 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 5,
+        shadowRadius: 1,
+        elevation: 3,
         borderBottomWidth: 1,
         borderBottomColor: '#ddd',
     },
     tabsContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        paddingVertical: 14,
+        paddingVertical: 10,
         paddingHorizontal: padding,
         position: 'relative',
     },

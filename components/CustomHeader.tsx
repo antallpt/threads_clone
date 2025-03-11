@@ -13,6 +13,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useRouter, useSegments } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import { Entypo } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics'; // Import Haptics API
 
 const screenWidth = Dimensions.get('window').width;
 // Increased pull threshold - user needs to pull down further to trigger refresh
@@ -20,29 +21,48 @@ const PULL_THRESHOLD = 150;
 
 export interface CustomHeaderRef {
     startRefresh: () => void;
+    setTouchActive: (isActive: boolean) => void; // Add this method
 }
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 const CustomHeader = forwardRef<CustomHeaderRef, { scrollY?: Animated.Value }>((props, ref) => {
+    // Props, auth, routing
     const { scrollY = new Animated.Value(0) } = props;
     const { isSignedIn } = useAuth();
     const router = useRouter();
     const segments = useSegments();
+    const isTouchActive = useRef(false);
 
-    const [showBackButton, setShowBackButton] = useState(false);
-    useEffect(() => {
-        setShowBackButton(segments[segments.length - 1] !== "home2");
-    }, [segments]);
 
-    // Animation States
+    // State declarations - declare all state first
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [showBackButton, setShowBackButton] = useState(false);
+
+    // Animation refs
     const rotationAnim = useRef(new Animated.Value(0)).current;
     const strokeDashoffsetAnim = useRef(new Animated.Value(66)).current;
     const pullAnim = useRef(new Animated.Value(0)).current;
     const logoOpacity = useRef(new Animated.Value(1)).current;
     const circleOpacity = useRef(new Animated.Value(0)).current;
+
+    // Haptic feedback refs - after isRefreshing declaration
+    const refreshing = useRef(false);  // Track refresh state for haptics
+    const lastScrollY = useRef(0);
+    const lastHapticY = useRef(0);
+    const lastHapticTime = useRef(0);
+    const currentSpacing = useRef(3);  // Very small spacing for very fast feedback
+
+    // Effects - after all state declarations
+    useEffect(() => {
+        setShowBackButton(segments[segments.length - 1] !== "home2");
+    }, [segments]);
+
+    // Effect to sync the React state with our ref
+    useEffect(() => {
+        refreshing.current = isRefreshing;
+    }, [isRefreshing]);
 
     // Modified interpolation for logo scaling with slower movement
     // We're extending the inputRange to make the logo move more slowly
@@ -60,12 +80,52 @@ const CustomHeader = forwardRef<CustomHeaderRef, { scrollY?: Animated.Value }>((
         outputRange: ['0deg', '360deg'],
     });
 
+    const triggerHapticFeedback = (currentY: number) => {
+        // Skip haptic processing if refreshing or touch not active
+        if (refreshing.current || !isTouchActive.current) {
+            return;
+        }
+
+        // Only do haptic feedback when pulling down and not past threshold
+        if (currentY < 0 && Math.abs(currentY) < PULL_THRESHOLD) {
+            // Use constant spacing for rapid feedback (smaller value = faster feedback)
+            const constantSpacing = 7; // Very small fixed value for rapid constant feedback
+
+            // Check if we've crossed a "dot" boundary
+            const distanceSinceLastHaptic = Math.abs(currentY - lastHapticY.current);
+
+            if (distanceSinceLastHaptic >= constantSpacing) {
+                // Trigger haptic
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
+
+                // Update the position of our last haptic "dot"
+                const stepsToMove = Math.floor(distanceSinceLastHaptic / constantSpacing);
+                lastHapticY.current = lastHapticY.current - (stepsToMove * constantSpacing);
+            }
+        }
+        // Threshold crossing haptic
+        else if (currentY < 0 && Math.abs(currentY) >= PULL_THRESHOLD &&
+            Math.abs(lastScrollY.current) < PULL_THRESHOLD) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        }
+
+        // Update last scroll position
+        lastScrollY.current = currentY;
+    };
+
     useEffect(() => {
         const listenerId = scrollY.addListener(({ value }) => {
             pullAnim.setValue(value);
 
-            // Trigger refresh ONLY when threshold is reached AND we're at the top (value <= 0)
-            // Now requires pulling further down with the increased PULL_THRESHOLD
+            // Handle haptic feedback based on scroll
+            triggerHapticFeedback(value);
+
+            // Always reset haptic tracking when scrolling returns to zero or positive
+            if (value >= 0) {
+                lastHapticY.current = 0;
+            }
+
+            // Trigger refresh when threshold is reached
             if (value <= 0 && Math.abs(value) >= PULL_THRESHOLD && !isRefreshing) {
                 triggerRefresh();
             }
@@ -78,12 +138,26 @@ const CustomHeader = forwardRef<CustomHeaderRef, { scrollY?: Animated.Value }>((
 
     // Expose startRefresh method via ref
     React.useImperativeHandle(ref, () => ({
-        startRefresh: triggerRefresh
+        startRefresh: triggerRefresh,
+        setTouchActive: (isActive: boolean) => {
+            isTouchActive.current = isActive;
+            if (!isActive) {
+                // Reset haptic tracking when touch ends
+                lastHapticY.current = 0;
+            }
+        }
     }));
 
     const triggerRefresh = () => {
         if (isRefreshing) return;
         setIsRefreshing(true);
+
+        // Update our ref immediately (don't wait for the effect)
+        refreshing.current = true;
+
+        // Custom haptic for refresh trigger (avoiding notification patterns)
+        // Use two sequential heavy impacts instead of a notification
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
         // Reset animation values
         strokeDashoffsetAnim.setValue(66);
@@ -133,7 +207,14 @@ const CustomHeader = forwardRef<CustomHeaderRef, { scrollY?: Animated.Value }>((
                     duration: 350,
                     useNativeDriver: true,
                 }).start(() => {
-                    // Reset state when animation completes
+                    // Reset haptic state when animation completes
+                    lastHapticY.current = 0;
+                    lastScrollY.current = 0;
+                    lastHapticTime.current = 0;
+                    currentSpacing.current = 3; // Reset to minimum spacing for fastest feedback
+                    refreshing.current = false;
+
+                    // Reset React state when animation completes
                     setIsRefreshing(false);
                 });
             }, 100);
