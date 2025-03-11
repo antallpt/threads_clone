@@ -23,9 +23,9 @@
 ## 📱 Screenshots
 
 <div align="center">
-  <img src="./screenshots/feed-screen.png" alt="Feed Screen" width="250"/>
   <img src="./screenshots/login-screen.png" alt="Login Screen" width="250"/>
   <img src="./screenshots/no-profile.png" alt="No Profile Screen" width="250"/>
+  <img src="./screenshots/feed-screen.png" alt="Feed Screen" width="250"/>
   <img src="./screenshots/search-screen.png" alt="Search Screen" width="250"/>
 </div>
 
@@ -95,5 +95,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by Antoni Allepetit</sub>
+  <sub>Built with ❤️ by Antal</sub>
 </div>
