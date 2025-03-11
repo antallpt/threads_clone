@@ -61,4 +61,5 @@ clerk.json
 
 # Expo
 app.json
-# (Then create an app.example.json with sensitive values removed)
+# (Then create an app.example.json with sensitive values removed).env
+.env.*

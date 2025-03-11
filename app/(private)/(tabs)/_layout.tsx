@@ -9,7 +9,6 @@ import {
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Tabs } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import CustomHeader from '@/components/CustomHeader';
 import {
     BottomSheetModal,
     BottomSheetBackdrop,
