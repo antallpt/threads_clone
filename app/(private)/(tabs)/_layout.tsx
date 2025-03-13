@@ -130,6 +130,7 @@ const Layout = () => {
                             headerShown: false
                         }}
                     />
+
                     <Tabs.Screen
                         name="create"
                         options={{
