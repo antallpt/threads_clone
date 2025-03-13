@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     contentItem: {
         padding: 15,
         marginBottom: 10,
-        backgroundColor: 'gray',
+        backgroundColor: '#f9f9f9',
         borderRadius: 8,
         borderWidth: 1,
         borderColor: '#eee',
