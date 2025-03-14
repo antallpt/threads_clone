@@ -7,13 +7,15 @@ import {
     ScrollView,
     Dimensions,
     RefreshControl,
-    NativeSyntheticEvent,
-    NativeScrollEvent,
-    StatusBar
+    StatusBar,
+    Image,
+
 } from 'react-native';
 import React, { useRef, useState, useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomHeader, { CustomHeaderRef } from '@/components/CustomHeader';
+import { Feather, Ionicons, MaterialCommunityIcons, SimpleLineIcons } from '@expo/vector-icons';
+import ThreadComposer, { ThreadComposerRef } from '@/components/ThreadComposer'; // Import the new component
 
 const screenWidth = Dimensions.get('window').width;
 const padding = 20;
@@ -25,10 +27,13 @@ const TAB_HEIGHT = 40;   // Estimated tab height
 const Home = () => {
     const insets = useSafeAreaInsets();
     const headerRef = useRef<CustomHeaderRef>(null);
+    const threadComposerRef = useRef<ThreadComposerRef>(null); // Add ref for the thread composer
+    const mainScaleValue = useRef(new Animated.Value(1)).current; // Animated value for scaling the main view
     const scrollX = useRef(new Animated.Value(0)).current;
     const scrollY = useRef(new Animated.Value(0)).current;
     const scrollViewRef = useRef<ScrollView>(null);
     const [refreshing, setRefreshing] = useState(false);
+
 
     const setTouchActive = useCallback((isActive: boolean) => {
         headerRef.current?.setTouchActive(isActive);
@@ -72,6 +77,17 @@ const Home = () => {
         setTimeout(() => setRefreshing(false), 2000);
     }, []);
 
+    // Open thread composer
+    const openThreadComposer = useCallback(() => {
+        threadComposerRef.current?.openSheet();
+    }, []);
+
+    // Handle post submission
+    const handlePostSubmit = useCallback((postText: string) => {
+        console.log('Post submitted from Home:', postText);
+        // Here you can handle the post submission, e.g., add it to your posts list
+    }, []);
+
     // Horizontal scroll event handler
     const handleHorizontalScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { x: scrollX } } }],
@@ -85,161 +101,219 @@ const Home = () => {
     );
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+        <Animated.View
+            style={[
+                styles.backgroundOverlay,
+            ]}
 
-            {/* Header that fades out when scrolling */}
+        >
             <Animated.View
                 style={[
-                    styles.headerContainer,
+                    styles.animatedBackground,
                     {
-                        paddingTop: insets.top,
-                        height: HEADER_HEIGHT + insets.top,
-                        transform: [{ translateY: headerTranslateY }],
-                        opacity: headerOpacity
-                    }
+                        transform: [{ scale: mainScaleValue }],
+                    },
                 ]}
             >
-                <CustomHeader ref={headerRef} scrollY={scrollY} />
-            </Animated.View>
+                <View style={styles.container}>
+                    <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-            {/* Main content container that fills the screen */}
-            <Animated.View style={styles.mainContainer}>
-                {/* Tab header that moves with scrolling */}
-                <Animated.View
-                    style={[
-                        styles.tabsOuterContainer,
-                        {
-                            transform: [{
-                                translateY: scrollY.interpolate({
-                                    inputRange: [0, HEADER_HEIGHT],
-                                    outputRange: [insets.top + HEADER_HEIGHT, insets.top],
-                                    extrapolate: 'clamp'
-                                })
-                            }]
-                        }
-                    ]}
-                >
-                    <View style={styles.tabsContainer}>
-                        <TouchableOpacity onPress={() => switchTab(0)} style={styles.tab}>
-                            <Animated.Text
-                                style={[
-                                    styles.tabText,
-                                    {
-                                        color: activeTab.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: ['#000', '#aaa'],
-                                        }),
-                                    },
-                                ]}
-                            >
-                                For You
-                            </Animated.Text>
-                        </TouchableOpacity>
+                    <ThreadComposer
+                        ref={threadComposerRef}
+                        onPostSubmit={handlePostSubmit}
+                        mainScaleValue={mainScaleValue}
+                    />
 
-                        <TouchableOpacity onPress={() => switchTab(1)} style={styles.tab}>
-                            <Animated.Text
-                                style={[
-                                    styles.tabText,
-                                    {
-                                        color: activeTab.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: ['#aaa', '#000'],
-                                        }),
-                                    },
-                                ]}
-                            >
-                                Following
-                            </Animated.Text>
-                        </TouchableOpacity>
-
-                        {/* Animated underline */}
-                        <Animated.View style={[
-                            styles.underline,
+                    {/* Header that fades out when scrolling */}
+                    <Animated.View
+                        style={[
+                            styles.headerContainer,
                             {
-                                width: underlineWidth,
-                                transform: [{ translateX }]
+                                paddingTop: insets.top,
+                                height: HEADER_HEIGHT + insets.top,
+                                transform: [{ translateY: headerTranslateY }],
+                                opacity: headerOpacity
                             }
-                        ]} />
-                    </View>
-                </Animated.View>
-
-                {/* Content that adjusts its spacing based on scroll position */}
-                <Animated.View
-                    style={[
-                        styles.contentWrapper,
-                        {
-                            // This is key: dynamically adjust padding based on scroll
-                            paddingTop: scrollY.interpolate({
-                                inputRange: [0, HEADER_HEIGHT],
-                                outputRange: [insets.top + HEADER_HEIGHT + TAB_HEIGHT, insets.top + TAB_HEIGHT],
-                                extrapolate: 'clamp'
-                            })
-                        }
-                    ]}
-                >
-                    <ScrollView
-                        ref={scrollViewRef}
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={false}
-                        scrollEventThrottle={16}
-                        onScroll={handleHorizontalScroll}
+                        ]}
                     >
-                        {/* "For You" tab content */}
-                        <ScrollView
-                            style={styles.page}
-                            scrollEventThrottle={16}
-                            onScroll={handleVerticalScroll}
-                            onScrollBeginDrag={() => setTouchActive(true)}
-                            onScrollEndDrag={() => setTouchActive(false)}
-                            showsVerticalScrollIndicator={false}
-                            refreshControl={
-                                <RefreshControl
-                                    refreshing={refreshing}
-                                    onRefresh={onRefresh}
-                                    progressViewOffset={60}
-                                    tintColor={'transparent'}
+                        <CustomHeader ref={headerRef} scrollY={scrollY} />
+                    </Animated.View>
 
-                                />
-                            }
+                    {/* Main content container that fills the screen */}
+                    <Animated.View style={styles.mainContainer}>
+                        {/* Tab header that moves with scrolling */}
+                        <Animated.View
+                            style={[
+                                styles.tabsOuterContainer,
+                                {
+                                    transform: [{
+                                        translateY: scrollY.interpolate({
+                                            inputRange: [0, HEADER_HEIGHT],
+                                            outputRange: [insets.top + HEADER_HEIGHT, insets.top],
+                                            extrapolate: 'clamp'
+                                        })
+                                    }]
+                                }
+                            ]}
                         >
-                            {/* Demo content */}
-                            {Array(20).fill(0).map((_, i) => (
-                                <View key={i} style={styles.contentItem}>
-                                    <Text style={styles.contentText}>Content item {i + 1}</Text>
-                                </View>
-                            ))}
-                        </ScrollView>
+                            <View style={styles.tabsContainer}>
+                                <TouchableOpacity onPress={() => switchTab(0)} style={styles.tab}>
+                                    <Animated.Text
+                                        style={[
+                                            styles.tabText,
+                                            {
+                                                color: activeTab.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: ['#000', '#aaa'],
+                                                }),
+                                            },
+                                        ]}
+                                    >
+                                        For You
+                                    </Animated.Text>
+                                </TouchableOpacity>
 
-                        {/* "Following" tab content */}
-                        <ScrollView
-                            style={styles.page}
-                            scrollEventThrottle={16}
-                            onScroll={handleVerticalScroll}
-                            onScrollBeginDrag={() => setTouchActive(true)}
-                            onScrollEndDrag={() => setTouchActive(false)}
-                            showsVerticalScrollIndicator={false}
-                            refreshControl={
-                                <RefreshControl
-                                    refreshing={refreshing}
-                                    onRefresh={onRefresh}
-                                    progressViewOffset={60}
-                                    tintColor={'transparent'}
-                                />
-                            }
+                                <TouchableOpacity onPress={() => switchTab(1)} style={styles.tab}>
+                                    <Animated.Text
+                                        style={[
+                                            styles.tabText,
+                                            {
+                                                color: activeTab.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: ['#aaa', '#000'],
+                                                }),
+                                            },
+                                        ]}
+                                    >
+                                        Following
+                                    </Animated.Text>
+                                </TouchableOpacity>
+
+                                {/* Animated underline */}
+                                <Animated.View style={[
+                                    styles.underline,
+                                    {
+                                        width: underlineWidth,
+                                        transform: [{ translateX }]
+                                    }
+                                ]} />
+                            </View>
+                        </Animated.View>
+
+                        {/* Content that adjusts its spacing based on scroll position */}
+                        <Animated.View
+                            style={[
+                                styles.contentWrapper,
+                                {
+                                    // This is key: dynamically adjust padding based on scroll
+                                    paddingTop: scrollY.interpolate({
+                                        inputRange: [0, HEADER_HEIGHT],
+                                        outputRange: [insets.top + HEADER_HEIGHT + TAB_HEIGHT, insets.top + TAB_HEIGHT],
+                                        extrapolate: 'clamp'
+                                    })
+                                }
+                            ]}
                         >
-                            {/* Demo content */}
-                            {Array(20).fill(0).map((_, i) => (
-                                <View key={i} style={styles.contentItem}>
-                                    <Text style={styles.contentText}>Following item {i + 1}</Text>
-                                </View>
-                            ))}
-                        </ScrollView>
-                    </ScrollView>
-                </Animated.View>
+                            <ScrollView
+                                ref={scrollViewRef}
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                scrollEventThrottle={16}
+                                onScroll={handleHorizontalScroll}
+                            >
+                                {/* "For You" tab content */}
+                                <ScrollView
+                                    style={styles.page}
+                                    scrollEventThrottle={16}
+                                    onScroll={handleVerticalScroll}
+                                    onScrollBeginDrag={() => setTouchActive(true)}
+                                    onScrollEndDrag={() => setTouchActive(false)}
+                                    showsVerticalScrollIndicator={false}
+                                    refreshControl={
+                                        <RefreshControl
+                                            refreshing={refreshing}
+                                            onRefresh={onRefresh}
+                                            progressViewOffset={60}
+                                            tintColor={'transparent'}
+
+                                        />
+                                    }
+                                >
+                                    <TouchableOpacity onPress={openThreadComposer}>
+                                        <View style={styles.inputContainer}>
+                                            <View style={{ flexDirection: 'row', gap: 13 }}>
+                                                <View style={{
+                                                    flexDirection: 'column',
+                                                    gap: 3,
+                                                    alignItems: 'center',
+                                                    width: 34
+                                                }}>
+                                                    <Image source={require('@/assets/images/profile.png')} style={styles.img} resizeMode='contain' />
+                                                </View>
+
+                                                <View style={styles.textContainer}>
+                                                    <Text style={{ fontSize: 13, fontWeight: '400' }}>antal.lpt</Text>
+
+                                                    <Text
+                                                        style={styles.textInput}
+                                                    >What's new?</Text>
+
+                                                    <View
+                                                        style={[
+                                                            styles.iconsContainer,
+                                                        ]}
+                                                    >
+                                                        <Ionicons name='images-outline' size={20} color={'#a0a0a0'} />
+                                                        <Ionicons name='camera-outline' size={23} color={'#a0a0a0'} />
+                                                        <MaterialCommunityIcons name='file-gif-box' size={25} color={'#a0a0a0'} />
+                                                        <SimpleLineIcons name='microphone' size={19} color={'#a0a0a0'} />
+                                                        <Feather name='hash' size={20} color={'#a0a0a0'} />
+                                                        <Feather name='bar-chart-2' size={22} color={'#a0a0a0'} />
+                                                        <SimpleLineIcons name='location-pin' size={19} color={'#a0a0a0'} />
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                    {/* Demo content */}
+                                    {Array(20).fill(0).map((_, i) => (
+                                        <View key={i} style={styles.contentItem}>
+                                            <Text style={styles.contentText}>Content item {i + 1}</Text>
+                                        </View>
+                                    ))}
+                                </ScrollView>
+
+                                {/* "Following" tab content */}
+                                <ScrollView
+                                    style={styles.page}
+                                    scrollEventThrottle={16}
+                                    onScroll={handleVerticalScroll}
+                                    onScrollBeginDrag={() => setTouchActive(true)}
+                                    onScrollEndDrag={() => setTouchActive(false)}
+                                    showsVerticalScrollIndicator={false}
+                                    refreshControl={
+                                        <RefreshControl
+                                            refreshing={refreshing}
+                                            onRefresh={onRefresh}
+                                            progressViewOffset={60}
+                                            tintColor={'transparent'}
+                                        />
+                                    }
+                                >
+                                    {/* Demo content */}
+                                    {Array(20).fill(0).map((_, i) => (
+                                        <View key={i} style={styles.contentItem}>
+                                            <Text style={styles.contentText}>Following item {i + 1}</Text>
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            </ScrollView>
+                        </Animated.View>
+                    </Animated.View>
+                </View>
             </Animated.View>
-        </View>
+        </Animated.View>
     );
 };
 
@@ -321,7 +395,56 @@ const styles = StyleSheet.create({
     contentText: {
         fontSize: 16,
         color: '#333',
-    }
+    },
+    inputContainer: {
+        flex: 1,
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        gap: 7
+    },
+    textInput: {
+        fontSize: 13,
+        fontWeight: '300',
+        paddingTop: 0,
+        textAlignVertical: 'top',
+        width: '100%',
+        paddingBottom: 5,
+        color: '#a0a0a0'
+    },
+    textContainer: {
+        flex: 1,
+        alignItems: 'flex-start',
+        position: 'relative',
+        gap: 5,
+    },
+    iconsContainer: {
+        flexDirection: 'row',
+        gap: 15,
+        alignItems: 'center',
+        paddingVertical: 2,
+        left: 0,
+        pointerEvents: 'auto',
+        paddingBottom: 15
+    },
+    img: {
+        width: 34,
+        height: 34,
+        borderRadius: 17
+    },
+    animatedBackground: {
+        flex: 1,
+        overflow: 'hidden',
+        backgroundColor: '#fff',
+        borderRadius: 20,
+    },
+    backgroundOverlay: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "black",
+    },
 });
 
 export default Home;
