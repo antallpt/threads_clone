@@ -9,6 +9,7 @@ import {
     RefreshControl,
     StatusBar,
     Image,
+    TextInput,
 
 } from 'react-native';
 import React, { useRef, useState, useCallback } from 'react';
@@ -250,27 +251,31 @@ const Home = () => {
                                                     width: 34
                                                 }}>
                                                     <Image source={require('@/assets/images/profile.png')} style={styles.img} resizeMode='contain' />
+                                                    {/* Use Animated.View with smooth transitions */}
                                                 </View>
 
                                                 <View style={styles.textContainer}>
-                                                    <Text style={{ fontSize: 13, fontWeight: '400' }}>antal.lpt</Text>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>antal.lpt</Text>
 
-                                                    <Text
-                                                        style={styles.textInput}
-                                                    >What's new?</Text>
+                                                    <Text style={styles.textInput} maxFontSizeMultiplier={1.2}>
 
+                                                        What's new?
+                                                    </Text>
+
+                                                    {/* Icons with smooth animation */}
                                                     <View
                                                         style={[
                                                             styles.iconsContainer,
                                                         ]}
+                                                        pointerEvents="none"
                                                     >
-                                                        <Ionicons name='images-outline' size={20} color={'#a0a0a0'} />
-                                                        <Ionicons name='camera-outline' size={23} color={'#a0a0a0'} />
-                                                        <MaterialCommunityIcons name='file-gif-box' size={25} color={'#a0a0a0'} />
-                                                        <SimpleLineIcons name='microphone' size={19} color={'#a0a0a0'} />
-                                                        <Feather name='hash' size={20} color={'#a0a0a0'} />
-                                                        <Feather name='bar-chart-2' size={22} color={'#a0a0a0'} />
-                                                        <SimpleLineIcons name='location-pin' size={19} color={'#a0a0a0'} />
+                                                        <Ionicons name='images-outline' size={22} color={'#a0a0a0'} />
+                                                        <Ionicons name='camera-outline' size={25} color={'#a0a0a0'} />
+                                                        <MaterialCommunityIcons name='file-gif-box' size={27} color={'#a0a0a0'} />
+                                                        <SimpleLineIcons name='microphone' size={21} color={'#a0a0a0'} />
+                                                        <Feather name='hash' size={22} color={'#a0a0a0'} />
+                                                        <Feather name='bar-chart-2' size={24} color={'#a0a0a0'} />
+                                                        <SimpleLineIcons name='location-pin' size={21} color={'#a0a0a0'} />
                                                     </View>
                                                 </View>
                                             </View>
@@ -340,11 +345,6 @@ const styles = StyleSheet.create({
         right: 0,
         backgroundColor: '#fff',
         zIndex: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 1,
-        elevation: 3,
         borderBottomWidth: 1,
         borderBottomColor: '#ddd',
     },
@@ -403,12 +403,8 @@ const styles = StyleSheet.create({
         gap: 7
     },
     textInput: {
-        fontSize: 13,
-        fontWeight: '300',
-        paddingTop: 0,
-        textAlignVertical: 'top',
-        width: '100%',
-        paddingBottom: 5,
+        fontSize: 16,
+        fontWeight: '400',
         color: '#a0a0a0'
     },
     textContainer: {
@@ -419,9 +415,9 @@ const styles = StyleSheet.create({
     },
     iconsContainer: {
         flexDirection: 'row',
-        gap: 15,
+        gap: 20,
         alignItems: 'center',
-        paddingVertical: 2,
+        paddingVertical: 10,
         left: 0,
         pointerEvents: 'auto',
         paddingBottom: 15
