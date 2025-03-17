@@ -111,6 +111,7 @@ const Layout = () => {
                             tabBarIcon: ({ size, color, focused }) => (
                                 <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
                             ),
+                            headerShown: false
                         }}
                     />
                 </Tabs>
