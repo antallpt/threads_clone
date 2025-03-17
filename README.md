@@ -23,12 +23,12 @@
 ## 📱 Screenshots
 
 <div align="center">
-  <img src="./screenshots/login-screen.png" alt="Login Screen" height="600"/>
-  <img src="./screenshots/no-profile.png" alt="No Profile Screen" height="600"/>
-  <img src="./screenshots/feed-screen.png" alt="Feed Screen" height="600"/>
-  <img src="./screenshots/search-screen.png" alt="Search Screen" height="600""/>
-  <img src="./screenshots/create.png" alt="Search Screen" height="600"/>
-  <img src="./screenshots/profile.png" alt="Search Screen" height="600"/>
+  <img src="./screenshots/login-screen.png" alt="Login Screen" height="500"/>
+  <img src="./screenshots/no-profile.png" alt="No Profile Screen" height="500"/>
+  <img src="./screenshots/feed-screen.png" alt="Feed Screen" height="500"/>
+  <img src="./screenshots/search-screen.png" alt="Search Screen" height="500""/>
+  <img src="./screenshots/create.png" alt="Search Screen" height="500"/>
+  <img src="./screenshots/profile.png" alt="Search Screen" height="500"/>
 </div>
 
 ## 🛠️ Technologies
