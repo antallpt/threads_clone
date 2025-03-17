@@ -101,6 +101,7 @@ const Layout = () => {
                             tabBarIcon: ({ size, color, focused }) => (
                                 <Ionicons name={focused ? 'heart' : 'heart-outline'} size={size} color={color} />
                             ),
+                            headerShown: false
                         }}
                     />
                     <Tabs.Screen

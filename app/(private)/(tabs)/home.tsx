@@ -360,9 +360,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     tabText: {
-        fontSize: 14,
-        fontWeight: '500',
-        paddingVertical: 2,
+        fontSize: 16,
+        fontWeight: '600',
     },
     underline: {
         position: 'absolute',

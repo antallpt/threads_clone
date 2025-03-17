@@ -1,201 +1,334 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, Animated, Easing, Pressable, Text, Image } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import { View, Text, Animated, StyleSheet, TextInput, ScrollView, Dimensions, TouchableOpacity, Keyboard, Easing } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur'; // Import BlurView from expo-blur
 
-// Create animated components
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const AnimatedImage = Animated.createAnimatedComponent(Image);
+const searchTest = () => {
+    const HEADER_HEIGHT = 60;
+    const SEARCH_HEIGHT = 44;
 
-const ThreadsRefreshAnimation = () => {
-    // Animation states
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [isCompleted, setIsCompleted] = useState(false);
+    // Add state to track selected tab
+    const [selectedTab, setSelectedTab] = useState('All');
 
-    // Animation values
-    const rotationAnim = useRef(new Animated.Value(0)).current;
-    const logoAnim = useRef(new Animated.Value(0)).current;
-    const scaleAnim = useRef(new Animated.Value(1)).current;
-    const strokeDashoffsetAnim = useRef(new Animated.Value(66)).current; // Circumference of circle
+    const scrollY = useRef(new Animated.Value(0)).current;
+    const searchBarTranslateY = useRef(new Animated.Value(0)).current;
+    const headerHeight = useRef(new Animated.Value(60)).current;
+    const headerOpacityAnim = useRef(new Animated.Value(1)).current;
 
-    // Convert animation values to interpolated styles
-    const rotation = rotationAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0deg', '360deg'],
+    const insets = useSafeAreaInsets();
+
+    // Header fade and translate animation with much smoother transition
+    const headerOpacity = scrollY.interpolate({
+        inputRange: [0, HEADER_HEIGHT * 0.4, HEADER_HEIGHT * 0.8],
+        outputRange: [1, 0.8, 0],
+        extrapolate: 'clamp'
     });
 
-    const logoOpacity = logoAnim.interpolate({
-        inputRange: [0, 0.5, 1],
-        outputRange: [0, 0, 1],
+    // Slow down the header movement to make it feel more synchronized
+    const headerTranslateY = scrollY.interpolate({
+        inputRange: [0, HEADER_HEIGHT * 1.5],
+        outputRange: [0, -HEADER_HEIGHT - insets.top],
+        extrapolate: 'clamp'
     });
 
-    const circleOpacity = logoAnim.interpolate({
-        inputRange: [0, 0.3, 1],
-        outputRange: [1, 0, 0],
-    });
+    // Vertical scroll event handler with damping for smoother feel
+    const handleVerticalScroll = Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        {
+            useNativeDriver: false,
+            listener: (event) => {
+                // We could add velocity-based adjustments here if needed
+            },
+        }
+    );
 
-    // Start refresh animation
-    const startRefresh = () => {
-        // Reset states
-        setIsRefreshing(true);
-        setIsCompleted(false);
-        logoAnim.setValue(0);
-        strokeDashoffsetAnim.setValue(66); // Reset circle progress
-
-        // Start rotating circle
-        Animated.loop(
-            Animated.timing(rotationAnim, {
-                toValue: 1,
-                duration: 1000,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            })
-        ).start();
-
-        // Animate progress to complete state (circle drawing)
-        Animated.timing(strokeDashoffsetAnim, {
-            toValue: 0,
-            duration: 2000, // Simulated loading time
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-        }).start(() => {
-            // Stop rotation animation
-            rotationAnim.stopAnimation();
-
-            // Show completion animation with Threads logo
-            Animated.sequence([
-                Animated.timing(logoAnim, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(scaleAnim, {
-                    toValue: 1.2,
-                    duration: 150,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(scaleAnim, {
-                    toValue: 1,
-                    duration: 150,
-                    useNativeDriver: true,
-                })
-            ]).start(() => {
-                setIsRefreshing(false);
-                setIsCompleted(true);
-
-                // Reset after a delay
-                setTimeout(() => {
-                    setIsCompleted(false);
-                }, 1500);
-            });
-        });
+    // Helper function to determine tab style based on selection
+    const getTabStyle = (tabName: string) => {
+        return [
+            styles.btn,
+            selectedTab === tabName ? styles.selectedBtn : styles.unselectedBtn
+        ];
     };
 
     return (
         <View style={styles.container}>
-            <View style={styles.animationContainer}>
-                <Animated.View
-                    style={[
-                        styles.svgContainer,
-                        {
-                            transform: [
-                                { rotate: isRefreshing && !isCompleted ? rotation : '0deg' },
-                                { scale: scaleAnim }
-                            ]
-                        }
-                    ]}
-                >
-                    {/* Container für das Logo und den Ladekreis */}
-                    <View style={styles.overlayContainer}>
-                        {/* Progress circle */}
-                        <Svg height="30" width="30" viewBox="0 0 30 30">
-                            <AnimatedCircle
-                                cx="15"
-                                cy="15"
-                                r="10"
-                                stroke="black"
-                                strokeWidth={2.5}
-                                fill="transparent"
-                                strokeLinecap="round"
-                                opacity={circleOpacity}
-                                strokeDasharray={66} // 2 * PI * r (circumference)
-                                strokeDashoffset={strokeDashoffsetAnim}
-                            />
-                        </Svg>
-
-                        {/* Eigenes Threads Logo (als Bild) */}
-                        <AnimatedImage
-                            source={require('../../../assets/images/threadslogo.png')} // Passe den Pfad zu deinem Logo an
-                            style={[
-                                styles.logoImage,
-                                { opacity: logoOpacity }
-                            ]}
-                            resizeMode="contain"
-                        />
-                    </View>
-                </Animated.View>
-            </View>
-
-            <Pressable
-                style={styles.button}
-                onPress={startRefresh}
-                disabled={isRefreshing}
+            <Animated.View
+                style={[
+                    styles.contentWrapper,
+                    {
+                        paddingTop: scrollY.interpolate({
+                            inputRange: [0, HEADER_HEIGHT * 1.5],
+                            outputRange: [
+                                HEADER_HEIGHT + HEADER_HEIGHT + SEARCH_HEIGHT + 15,
+                                HEADER_HEIGHT + SEARCH_HEIGHT - 15
+                            ],
+                            extrapolate: 'clamp'
+                        }),
+                    }
+                ]}
             >
-                <Text style={styles.buttonText}>
-                    {isRefreshing ? 'Loading...' : isCompleted ? 'Refreshed!' : 'Refresh'}
-                </Text>
-            </Pressable>
+                <ScrollView
+                    style={styles.page}
+                    scrollEventThrottle={8}
+                    onScroll={handleVerticalScroll}
+                    showsVerticalScrollIndicator={false}
+                    decelerationRate="normal"
+                >
+                    {/* Demo content */}
+                    {Array(20).fill(0).map((_, i) => (
+                        <View key={i} style={styles.contentItem}>
+                            <Text style={styles.contentText}>Content item {i + 1}</Text>
+                        </View>
+                    ))}
+                </ScrollView>
+            </Animated.View>
+
+            <Animated.View
+                style={[
+                    styles.headerContainer,
+                    {
+                        paddingTop: insets.top,
+                        height: Animated.add(headerHeight, SEARCH_HEIGHT),
+                        transform: [{ translateY: headerTranslateY }],
+                        opacity: Animated.multiply(headerOpacity, headerOpacityAnim),
+                    }
+                ]}>
+                <Text style={styles.header}>Activity</Text>
+                <Ionicons name='notifications-off-outline' color={'#000'} size={28} style={{ paddingBottom: 1 }} />
+            </Animated.View>
+
+            <Animated.View
+                style={[
+                    styles.searchContainer,
+                    {
+                        top: Animated.add(
+                            insets.top,
+                            Animated.add(
+                                headerHeight,
+                                scrollY.interpolate({
+                                    inputRange: [0, HEADER_HEIGHT * 0.3, HEADER_HEIGHT * 1.5],
+                                    outputRange: [0, -HEADER_HEIGHT * 0.2, -HEADER_HEIGHT],
+                                    extrapolate: 'clamp'
+                                })
+                            )
+                        ),
+                        paddingHorizontal: 16,
+                        paddingVertical: 2,
+                        zIndex: 20,
+                    }
+                ]}
+                pointerEvents="box-none"
+            >
+                <Animated.View style={[
+                    styles.searchLayout,
+                    {
+                        transform: [{ translateY: searchBarTranslateY }]
+                    }
+                ]} pointerEvents='auto'>
+                    <Animated.View
+                        style={[
+                            styles.searchBar,
+                            { paddingRight: 0 } // Explicitly override right padding
+                        ]}
+                    >
+                        <View style={styles.tabsWrapper}>
+                            {/* Blur Effect behind tabs */}
+                            <BlurView
+                                intensity={5}
+                                tint="light"
+                                style={styles.bottomBlur}
+                            />
+
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.tabsContainer}
+                                contentInset={{ right: 0 }}
+                                scrollIndicatorInsets={{ right: 0 }}
+                                style={[{ marginRight: -16 }, styles.tabsScrollView]} // Added tabsScrollView style
+                            >
+                                <TouchableOpacity
+                                    style={getTabStyle('All')}
+                                    onPress={() => setSelectedTab('All')}
+                                >
+                                    <Text style={styles.tabText}>All</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={getTabStyle('Requests')}
+                                    onPress={() => setSelectedTab('Requests')}
+                                >
+                                    <Text style={styles.tabText}>Requests</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={getTabStyle('Replies')}
+                                    onPress={() => setSelectedTab('Replies')}
+                                >
+                                    <Text style={styles.tabText}>Replies</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={getTabStyle('Mentions')}
+                                    onPress={() => setSelectedTab('Mentions')}
+                                >
+                                    <Text style={styles.tabText}>Mentions</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={getTabStyle('Quotes')}
+                                    onPress={() => setSelectedTab('Quotes')}
+                                >
+                                    <Text style={styles.tabText}>Quotes</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[getTabStyle('Reposts'), styles.lastTab]}
+                                    onPress={() => setSelectedTab('Reposts')}
+                                >
+                                    <Text style={styles.tabText}>Reposts</Text>
+                                </TouchableOpacity>
+                            </ScrollView>
+                        </View>
+                    </Animated.View>
+                </Animated.View>
+            </Animated.View>
         </View>
-    );
-};
+    )
+}
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: 'white',
     },
-    animationContainer: {
-        width: 50,
-        height: 50,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 25,
-        marginBottom: 30,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    svgContainer: {
-        width: 30,
-        height: 30,
-    },
-    overlayContainer: {
+    headerContainer: {
         position: 'absolute',
-        width: 30,
-        height: 30,
-        justifyContent: 'center',
+        top: 10,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+        backgroundColor: 'white',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        paddingHorizontal: 16
+    },
+    header: {
+        fontSize: 32,
+        fontWeight: 'bold',
+    },
+    searchBar: {
+        flexDirection: 'row',
         alignItems: 'center',
     },
-    logoImage: {
-        position: 'absolute',
-        width: 20,
-        height: 20,
+    searchIcon: {
+        marginRight: 12,
     },
-    button: {
-        backgroundColor: '#000',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 8,
-    },
-    buttonText: {
-        color: '#fff',
+    searchInput: {
+        flex: 1,
+        height: '100%',
         fontSize: 16,
-        fontWeight: '600',
-    }
+        color: 'black',
+    },
+    contentWrapper: {
+        flex: 1,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'transparent',
+    },
+    page: {
+        width: '100%',
+        paddingHorizontal: 16,
+        marginBottom: 80,
+    },
+    contentItem: {
+        padding: 15,
+        marginBottom: 10,
+        backgroundColor: '#f9f9f9',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#eee',
+    },
+    contentText: {
+        fontSize: 16,
+        color: '#333',
+    },
+    searchLayout: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 43,
+        justifyContent: 'space-between',
+        backgroundColor: 'transparent',
+    },
+    backButton: {
+        justifyContent: 'center',
+        height: 40,
+        width: 40,
+        backgroundColor: 'transparent',
+    },
+    searchContainer: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        paddingHorizontal: 16,
+        zIndex: 15,
+        height: 44,
+        overflow: 'visible', // Allow content to overflow
+    },
+    // Base button style
+    btn: {
+        width: 100,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 20,
+        borderColor: '#D0D0D0',
+        borderWidth: 0.8,
+    },
+    // Selected and unselected states
+    selectedBtn: {
+        backgroundColor: '#F0F0F0',
+    },
+    unselectedBtn: {
+        backgroundColor: 'white',
+    },
+    tabText: {
+        fontWeight: '500',
+    },
+    // Container style for tabs with proper spacing
+    tabsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingRight: 16, // Add padding that will be canceled out
+        gap: 10, // This adds the 10px gap between items
+    },
+    // Style for the last tab item
+    lastTab: {
+        marginRight: 0,
+    },
+    // New styles for blur effect
+    tabsWrapper: {
+        position: 'relative',
+        width: '100%',
+        height: 43, // Match the searchLayout height
+    },
+    bottomBlur: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 12,
+        overflow: 'hidden',
+        zIndex: 1, // Place behind the tab buttons
+    },
+    tabsScrollView: {
+        position: 'relative',
+        zIndex: 2, // Ensure tabs are above the blur
+    },
 });
 
-export default ThreadsRefreshAnimation;
+export default searchTest

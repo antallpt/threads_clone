@@ -378,7 +378,9 @@ const styles = StyleSheet.create({
     },
     headerContainer: {
         position: 'absolute',
-        top: 0,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        top: 10,
         left: 0,
         right: 0,
         zIndex: 10,
