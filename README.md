@@ -1,7 +1,7 @@
 # Threads Clone
 
 <div align="center">
-  <img src="./screenshots/login-screen.png" alt="Threads Clone" width="150"/>
+  <img src="./screenshots/login-screen.png" alt="Threads Clone" width="300"/>
   
   <p>A modern mobile application that replicates the core functionality of Threads.</p>
 
@@ -23,7 +23,7 @@
 ## 📱 Screenshots
 
 <div align="center">
-  <img src="./screenshots/login-screen.png" alt="Login Screen" width="250"/>
+  <img src="./screenshots/login-screen.png" alt="Login Screen" height="250"/>
   <img src="./screenshots/no-profile.png" alt="No Profile Screen" width="250"/>
   <img src="./screenshots/feed-screen.png" alt="Feed Screen" width="250"/>
   <img src="./screenshots/search-screen.png" alt="Search Screen" width="250"/>
