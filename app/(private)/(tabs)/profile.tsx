@@ -522,7 +522,8 @@ const styles = StyleSheet.create({
     profileActions: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingTop: 15
+        paddingTop: 15,
+        gap: 10
     },
     profileButton: {
         flex: 1,
@@ -531,7 +532,6 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 8,
         alignItems: 'center',
-        marginRight: 10,
     },
     profileButtonText: {
         fontSize: 14,
