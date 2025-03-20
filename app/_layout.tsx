@@ -10,9 +10,16 @@ import * as SecureStore from 'expo-secure-store';
 import 'react-native-reanimated';
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!
+
+import { ConvexReactClient } from 'convex/react';
+import { ConvexProviderWithClerk } from 'convex/react-clerk';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+
+const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
+  unsavedChangesWarning: false,
+});
 
 const tokenCache = {
   async getToken(key: string): Promise<string | null | undefined> {
@@ -68,7 +75,7 @@ const InitialLayout = () => {
     const inAuthGroup = segments.includes("(private)");
 
     if (isSignedIn && !inAuthGroup) {
-      router.replace('/(private)/(tabs)/home');
+      router.replace('/(private)/(tabs)/feed/home');
     } else if (!isSignedIn) {
       router.replace('/');
     }
@@ -104,7 +111,11 @@ const RootLayoutNav = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-        <InitialLayout />
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          <BottomSheetModalProvider>
+            <InitialLayout />
+          </BottomSheetModalProvider>
+        </ConvexProviderWithClerk>
       </ClerkProvider>
     </GestureHandlerRootView>
   );

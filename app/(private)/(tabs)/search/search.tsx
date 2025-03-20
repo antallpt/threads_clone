@@ -1,17 +1,29 @@
-import { View, Text, Animated, StyleSheet, TextInput, ScrollView, Dimensions, TouchableOpacity, Keyboard, Easing } from 'react-native'
+import { View, Text, Animated, StyleSheet, TextInput, Dimensions, TouchableOpacity, Keyboard, Easing } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Entypo, Feather } from '@expo/vector-icons';
+import { FlatList } from 'react-native-gesture-handler';
+import ProfileSearchResult from '@/components/ProfileSearchResult';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { router, Stack } from 'expo-router';
+import { Doc } from '@/convex/_generated/dataModel';
 
 const { width } = Dimensions.get('window');
 
-const searchTest = () => {
+const SearchTest = () => {
+    const [search, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // Fixed the issue with the query - properly handle empty search
+    const userList = useQuery(api.users.searchUsers,
+        debouncedSearch && debouncedSearch.length > 0 ? { search: debouncedSearch } : "skip"
+    );
+
     const HEADER_HEIGHT = 60;
     const SEARCH_HEIGHT = 44;
-    // Adjust animation speed to better match scrolling
     const ANIMATION_DURATION = 200;
 
-    const [searchQuery, setSearchQuery] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [currentScrollY, setCurrentScrollY] = useState(0);
@@ -28,6 +40,17 @@ const searchTest = () => {
     const shadowAnim = useRef(new Animated.Value(0)).current;
 
     const insets = useSafeAreaInsets();
+
+    // Debounce search query to prevent too many API calls
+    useEffect(() => {
+        const timerId = setTimeout(() => {
+            setDebouncedSearch(search);
+        }, 300);
+
+        return () => {
+            clearTimeout(timerId);
+        };
+    }, [search]);
 
     // Header fade and translate animation with much smoother transition
     const headerOpacity = scrollY.interpolate({
@@ -81,7 +104,7 @@ const searchTest = () => {
         });
 
         return () => scrollY.removeListener(scrollListener);
-    }, [isSearchFocused, scrolled]);
+    }, [isSearchFocused, scrolled, currentScrollY]);
 
     useEffect(() => {
         if (isSearchFocused) {
@@ -98,9 +121,6 @@ const searchTest = () => {
         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
         {
             useNativeDriver: false,
-            listener: (event) => {
-                // We could add velocity-based adjustments here if needed
-            },
         }
     );
 
@@ -136,9 +156,9 @@ const searchTest = () => {
                 useNativeDriver: false,
                 easing: Easing.inOut(Easing.ease)
             }),
-            // Fade out results immediately
+            // Show results with animation
             Animated.timing(resultsOpacity, {
-                toValue: 0,
+                toValue: 1, // Changed from 0 to 1 to make results visible
                 duration: 100,
                 useNativeDriver: false
             }),
@@ -251,38 +271,77 @@ const searchTest = () => {
         Animated.parallel(animations).start();
     }
 
+    const navigateToProfile = (userId: string) => {
+        // Close the search bar/keyboard
+        handleSearchBlur();
+
+        // Navigate to the profile page with userId param
+        router.push({
+            pathname: "/(private)/(tabs)/search/profile/[id]",
+            params: { id: userId }
+        });
+    };
+
+    // This component handles errors when rendering items in the FlatList
+    const renderProfileSearchResult = ({ item }: { item: Doc<'users'> }) => {
+        try {
+            return (
+                <TouchableOpacity
+                    onPress={() => navigateToProfile(item._id)}
+                    activeOpacity={0.7}
+                >
+                    <ProfileSearchResult key={item._id} user={item} />
+                </TouchableOpacity>
+            );
+        } catch (error) {
+            console.error('Error rendering ProfileSearchResult:', error, 'Item:', JSON.stringify(item));
+            // Fallback component in case of rendering errors
+            return (
+                <View style={styles.errorItem}>
+                    <Text>Error displaying user</Text>
+                </View>
+            );
+        }
+    };
+
     return (
         <View style={styles.container}>
             <Animated.View
                 style={[
                     styles.contentWrapper,
                     {
-                        paddingTop: scrollY.interpolate({
-                            inputRange: [0, HEADER_HEIGHT * 1.5],
-                            outputRange: [
-                                HEADER_HEIGHT + HEADER_HEIGHT + SEARCH_HEIGHT + 15,
-                                HEADER_HEIGHT + SEARCH_HEIGHT - 15
-                            ],
-                            extrapolate: 'clamp'
-                        }),
-                        opacity: resultsOpacity,
+                        paddingTop: insets.top + SEARCH_HEIGHT
                     }
                 ]}
             >
-                <ScrollView
-                    style={styles.page}
-                    scrollEventThrottle={8} // More frequent updates for smoother scrolling
-                    onScroll={handleVerticalScroll}
-                    showsVerticalScrollIndicator={false}
-                    decelerationRate="normal" // Standard deceleration for predictable animations
-                >
-                    {/* Demo content */}
-                    {Array(20).fill(0).map((_, i) => (
-                        <View key={i} style={styles.contentItem}>
-                            <Text style={styles.contentText}>Content item {i + 1}</Text>
-                        </View>
-                    ))}
-                </ScrollView>
+                {/* Results are always visible when search is focused */}
+                {isSearchFocused ? (
+                    <View style={{ flex: 1 }}>
+                        <FlatList
+                            data={userList || []}
+                            contentInsetAdjustmentBehavior="automatic"
+                            ItemSeparatorComponent={() => (
+                                <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#eee' }} />
+                            )}
+                            ListEmptyComponent={() => (
+                                <Text style={styles.emptyText}>
+                                    {search.length > 0 ? "No users found" : "Type to search for users"}
+                                </Text>
+                            )}
+                            renderItem={renderProfileSearchResult}
+                            keyExtractor={item => item._id}
+                            onScroll={handleVerticalScroll}
+                            scrollEventThrottle={8}
+                            showsVerticalScrollIndicator={false}
+                        />
+                    </View>
+                ) : (
+                    // Display an empty state when not searching
+                    <View style={styles.initialSearchState}>
+                        <Feather name="search" size={50} color="#8e8e8e" style={{ opacity: 0.5 }} />
+                        <Text style={styles.searchPromptText}>Search for users</Text>
+                    </View>
+                )}
             </Animated.View>
 
             <Animated.View
@@ -308,19 +367,18 @@ const searchTest = () => {
                                 headerHeight,
                                 scrollY.interpolate({
                                     inputRange: [0, HEADER_HEIGHT * 0.3, HEADER_HEIGHT * 1.5],
-                                    outputRange: [0, -HEADER_HEIGHT * 0.2, -HEADER_HEIGHT],
+                                    outputRange: [0, 0, 0],
                                     extrapolate: 'clamp'
                                 })
                             )
                         ),
-                        shadowOpacity: isSearchFocused ? 0 : shadowOpacity, // Ensure shadow is gone when focused
+                        shadowOpacity: isSearchFocused ? 0 : shadowOpacity,
                         shadowRadius: 4,
                         shadowColor: "#000",
                         shadowOffset: { width: 0, height: 2 },
                         elevation: shadowElevation,
                         paddingHorizontal: 16,
-                        paddingVertical: 2,
-                        zIndex: 20, // Increased z-index
+                        zIndex: 20,
                     }
                 ]}
                 pointerEvents="box-none"
@@ -355,9 +413,10 @@ const searchTest = () => {
                             style={styles.searchInput}
                             placeholder="Search"
                             placeholderTextColor="#8e8e8e"
-                            value={searchQuery}
+                            value={search}
                             onChangeText={setSearchQuery}
                             onFocus={handleSearchFocus}
+                            autoCapitalize="none"
                         />
 
                         {/* Filter icon inside search bar */}
@@ -394,7 +453,7 @@ const styles = StyleSheet.create({
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fafafa',
+        backgroundColor: '#f2f2f2',
         borderRadius: 17,
         paddingVertical: 12,
         paddingHorizontal: 20,
@@ -417,11 +476,7 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         backgroundColor: 'transparent',
-    },
-    page: {
-        width: '100%',
         paddingHorizontal: 16,
-        marginBottom: 80,
     },
     contentItem: {
         padding: 15,
@@ -456,6 +511,29 @@ const styles = StyleSheet.create({
         zIndex: 15,
         height: 44,
     },
+    emptyText: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginTop: 16,
+        color: '#8e8e8e',
+    },
+    initialSearchState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: -40,
+    },
+    searchPromptText: {
+        fontSize: 18,
+        color: '#8e8e8e',
+        marginTop: 16,
+    },
+    errorItem: {
+        padding: 16,
+        backgroundColor: '#fff0f0',
+        borderRadius: 8,
+        marginVertical: 4,
+    }
 });
 
-export default searchTest
+export default SearchTest;

@@ -5,11 +5,12 @@ import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import { useSSO } from '@clerk/clerk-expo';
 const { width } = Dimensions.get('window');
 import 'react-native-gesture-handler';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 const IMAGE_ASPECT_RATIO = 768 / 831;
 
 const Page = () => {
-    const router = useRouter();
 
     useEffect(() => {
         StatusBar.setHidden(true);

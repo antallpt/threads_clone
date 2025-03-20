@@ -24,7 +24,7 @@ const Layout = () => {
     };
 
     return (
-        <BottomSheetModalProvider>
+        <>
             <StatusBar barStyle="dark-content" />
 
             <Animated.View
@@ -61,7 +61,7 @@ const Layout = () => {
                     }}
                 >
                     <Tabs.Screen
-                        name="home"
+                        name="feed"
                         options={{
                             title: '',
                             tabBarIcon: ({ size, color, focused }) => (
@@ -116,7 +116,7 @@ const Layout = () => {
                     />
                 </Tabs>
             </Animated.View>
-        </BottomSheetModalProvider>
+        </>
     );
 };
 
